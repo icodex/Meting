@@ -1500,7 +1500,7 @@ class Meting
             'pic_id'   => $data['copyrightId'],
             'url_id'   => $data['copyrightId'],
             'lyric_id' => $data['copyrightId'],
-            'source'   => 'baidu',
+            'source'   => 'migu',
         );
         return $result;
     }
