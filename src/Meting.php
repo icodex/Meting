@@ -13,7 +13,7 @@ namespace Metowolf;
 
 class Meting
 {
-    const VERSION = '1.5.7';
+    const VERSION = '1.5.8';
 
     public $raw;
     public $data;
@@ -26,14 +26,14 @@ class Meting
     public $format = false;
     public $header;
 
-    public function __construct($value = 'netease')
+    public function __construct($value = 'migu')
     {
         $this->site($value);
     }
 
     public function site($value)
     {
-        $suppose = array('netease', 'tencent', 'xiami', 'kugou', 'baidu');
+        $suppose = array('netease', 'tencent', 'xiami', 'kugou', 'baidu','migu');
         $this->server = in_array($value, $suppose) ? $value : 'netease';
         $this->header = $this->curlset();
 
@@ -243,6 +243,20 @@ class Meting
                 ),
                 'format' => 'result.song_info.song_list',
             );
+            break;            
+            //http://m.music.migu.cn/migu/remoting/scr_search_tag?rows=50&type=2&keyword=周杰伦&pgc=1
+            case 'migu':
+                $api = array(
+                    'method' => 'GET',
+                    'url'    => 'http://m.music.migu.cn/migu/remoting/scr_search_tag',
+                    'body'   => array( 
+                        'pgc'   => isset($option['page']) ? $option['page'] : 1,
+                        'keyword'     => $keyword,
+                        'type'   => '2',
+                        'rows' => isset($option['limit']) ? $option['limit'] : 50,
+                    ),
+                    'format' => 'musics',
+            );
             break;
         }
 
@@ -317,6 +331,19 @@ class Meting
                 'format' => 'songinfo',
             );
             break;
+            //http://app.c.nf.migu.cn/MIGUM2.0/v1.0/content/resourceinfo.do?needSimple=00&copyrightId=60054701918&resourceType=2
+            case 'migu':
+                $api = array(
+                    'method' => 'GET',
+                    'url'    => 'http://app.c.nf.migu.cn/MIGUM2.0/v1.0/content/resourceinfo.do',
+                    'body'   => array( 
+                        'copyrightId'   => $id,
+                        'resourceType'      => 2,
+                        'needSimple' => '00', 
+                    ),  
+                    'format' => '',
+                );
+                break; 
         }
 
         return $this->exec($api);
@@ -655,6 +682,19 @@ class Meting
                 'decode' => 'baidu_url',
             );
             break;
+            //http://app.c.nf.migu.cn/MIGUM2.0/v1.0/content/resourceinfo.do?needSimple=00&copyrightId=60054701918&resourceType=2
+            case 'migu':
+                $api = array(
+                    'method' => 'GET',
+                    'url'    => 'http://app.c.nf.migu.cn/MIGUM2.0/v1.0/content/resourceinfo.do',
+                    'body'   => array( 
+                        'copyrightId'   => $id,
+                        'resourceType'      => 2,
+                        'needSimple' => '00', 
+                    ), 
+                    'decode' => 'migu_url',
+            );
+            break;
         }
         $this->temp['br'] = $br;
 
@@ -732,6 +772,19 @@ class Meting
                 'decode' => 'baidu_lyric',
             );
             break;
+            //http://app.c.nf.migu.cn/MIGUM2.0/v1.0/content/resourceinfo.do?needSimple=00&copyrightId=60054701918&resourceType=2
+            case 'migu':
+                $api = array(
+                    'method' => 'GET',
+                    'url'    => 'http://app.c.nf.migu.cn/MIGUM2.0/v1.0/content/resourceinfo.do',
+                    'body'   => array( 
+                        'copyrightId'   => $id,
+                        'resourceType'      => 2,
+                        'needSimple' => '00', 
+                    ),  
+                    'decode' => 'migu_lyric',
+                );
+                break; 
         }
 
         return $this->exec($api);
@@ -768,6 +821,20 @@ class Meting
             $this->format = $format;
             $data = json_decode($data, true);
             $url = isset($data['songinfo']['pic_radio']) ? $data['songinfo']['pic_radio'] : $data['songinfo']['pic_small'];
+            break;           
+            case 'migu':
+                $format = $this->format;
+                $data = $this->format(false)->song($id);
+                $this->format = $format;
+                $data = json_decode($data, true);
+                $data = $data['resource'][0]['albumImgs'];
+                foreach($data  as $img)
+                {
+                    if($img['imgSizeType'] == '01')
+                    {
+                        $url = $img['img'];
+                    }
+                }
             break;
         }
 
@@ -818,6 +885,22 @@ class Meting
                 'Accept'          => '*/*',
                 'Content-type'    => 'application/json;charset=UTF-8',
                 'Accept-Language' => 'zh-CN',
+            );
+            //Host: m.music.migu.cn
+            //Proxy-Connection: keep-alive
+            //Accept: application/json, text/javascript, */*; q=0.01
+            //X-Requested-With: XMLHttpRequest
+            //User-Agent: Mozilla/5.0 (iPad; CPU OS 11_0 like Mac OS X) AppleWebKit/604.1.34 (KHTML, like Gecko) Version/11.0 Mobile/15A5341f Safari/604.1
+            //Referer: http://m.music.migu.cn/v3
+            //Accept-Encoding: gzip, deflate
+            //Accept-Language: zh-CN,zh;q=0.9
+            //
+            case 'migu':
+                return array(
+                    'Accept-Language' => 'zh-CN,zh;q=0.9',
+                    'Accept-Encoding' => 'gzip, deflate',
+                    'User-Agent'      => 'Mozilla/5.0 (iPad; CPU OS 11_0 like Mac OS X) AppleWebKit/604.1.34 (KHTML, like Gecko) Version/11.0 Mobile/15A5341f Safari/604.1',
+                    'Accept'   => 'application/json, text/javascript, */*; q=0.01',
             );
         }
     }
@@ -1173,6 +1256,36 @@ class Meting
 
         return json_encode($url);
     }
+    private function migu_url($result)
+    {
+        $data = json_decode($result, true);
+        $max = 0;
+        $url = array();
+        $data =$data['resource'][0]['rateFormats'] ;
+        foreach ($data as $vo) {
+            if ($vo['formatType'] == "PQ") {
+                $url = array(
+                    'url' => str_replace("ftp://218.200.160.122:21","http://freetyst.nf.migu.cn",$vo['url']) ,
+                    'br'  => 320,
+                );
+                break;
+            }
+            elseif ($vo['formatType'] == "HQ") {
+                    $url = array(
+                        'url' => str_replace("ftp://218.200.160.122:21","http://freetyst.nf.migu.cn",$vo['url']) ,
+                        'br'  => 480,
+                    );
+                break;
+                }
+            }
+        if (!isset($url['url'])) {
+            $url = array(
+                'url' => '',
+                'br'  => -1,
+            );
+        }
+        return json_encode($url);
+    }
 
     private function netease_lyric($result)
     {
@@ -1264,7 +1377,22 @@ class Meting
 
         return json_encode($data);
     }
+    private function migu_lyric($result)
+    {
+        $result = json_decode($result, true);
+        $url = $result['resource'][0]['lrcUrl'];
+        $api = array(
+            'method' => 'GET',
+            'url'    => $url,
+        );
+        $lrc = $this->exec($api);
+        $data = array(
+            'lyric'  => isset($lrc) ? $lrc : '',
+            'tlyric' => '',
+        );
 
+        return json_encode($data);
+    }
     private function format_netease($data)
     {
         $result = array(
@@ -1360,6 +1488,20 @@ class Meting
             'source'   => 'baidu',
         );
 
+        return $result;
+    }
+    private function format_migu($data)
+    {
+        $result = array(
+            'id'       => $data['copyrightId'],
+            'name'     => $data['title'],
+            'artist'   => explode(',', $data['singerName']),
+            'album'    => $data['albumName'],
+            'pic_id'   => $data['copyrightId'],
+            'url_id'   => $data['copyrightId'],
+            'lyric_id' => $data['copyrightId'],
+            'source'   => 'baidu',
+        );
         return $result;
     }
 }
